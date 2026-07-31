@@ -1,0 +1,38 @@
+# ============================================================
+# [PLATFORM NOTE] project_type MUST remain "web".
+# This project serves an interactive preview UI at the root route (/)
+# via FastAPI + StaticFiles (static/preview.html). Changing to
+# "backend" will disable the preview sandbox and break the testing
+# workflow.
+# preview_enable MUST remain "enabled" for the same reason.
+# ============================================================
+
+[project]
+sub_id = "4edeb3cf"
+name = "Chinese-English-terminology-optimization-workflow"
+version = "0.0.32"
+requires = ["python-3.12"]
+project_type = "web"
+entrypoint = "src/main.py"
+
+[preview]
+preview_enable = "enabled"
+
+[dev]
+build = ["bash", "scripts/setup.sh"]
+run = ["bash", "scripts/http_run.sh", "-p", "5000"]
+
+[deploy]
+build = ["bash", "scripts/setup.sh"]
+run = ["bash", "scripts/http_run.sh", "-p", "5000"]
+deps = ["moreutils"]
+
+[deploy.profile]
+kind = "service"
+flavor = "workflow"
+
+[deploy.backend]
+enabled = true
+
+[subprojects]
+path = ["."]

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双语术语可读性优化工作流</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .upload-hint {
+            color: #999;
+            font-size: 13px;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .file-info {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .file-info.show {
+            display: block;
+        }
+        
+        .file-name {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .file-size {
+            color: #666;
+            font-size: 13px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .status.show {
+            display: block;
+        }
+        
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .result {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .result-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .download-link {
+            display: block;
+            text-align: center;
+            padding: 12px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .download-link:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>双语术语可读性优化工作流</h1>
+        <p class="subtitle">上传 Excel 文件，将生僻英语词汇替换为更易理解的高频基础词汇</p>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">点击或拖拽上传 Excel 文件</div>
+            <div class="upload-hint">支持 .xlsx, .xls, .csv 格式</div>
+        </div>
+        
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+        
+        <div class="file-info" id="fileInfo">
+            <div class="file-name" id="fileName"></div>
+            <div class="file-size" id="fileSize"></div>
+        </div>
+        
+        <button class="btn btn-primary" id="submitBtn" disabled>
+            开始处理
+        </button>
+        
+        <div class="status" id="status"></div>
+        
+        <div class="result" id="result">
+            <div class="result-title">处理结果</div>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTerms">0</div>
+                    <div class="stat-label">总术语数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="modifiedCount">0</div>
+                    <div class="stat-label">已修改</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="unchangedCount">0</div>
+                    <div class="stat-label">保留原样</div>
+                </div>
+            </div>
+            <a class="download-link" id="downloadLink" href="#" target="_blank">
+                下载对比报告
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const submitBtn = document.getElementById('submitBtn');
+        const status = document.getElementById('status');
+        const result = document.getElementById('result');
+        const downloadLink = document.getElementById('downloadLink');
+        
+        let selectedFile = null;
+        
+        // 点击上传区域
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        // 文件选择
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+        
+        // 拖拽上传
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+        
+        function handleFile(file) {
+            if (!file) return;
+            
+            const validTypes = ['.xlsx', '.xls', '.csv'];
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!validTypes.includes(ext)) {
+                showStatus('请选择 Excel 或 CSV 文件', 'error');
+                return;
+            }
+            
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.classList.add('show');
+            submitBtn.disabled = false;
+            hideStatus();
+            result.classList.remove('show');
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+        
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = 'status show ' + type;
+        }
+        
+        function hideStatus() {
+            status.classList.remove('show');
+        }
+        
+        // 提交处理
+        submitBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span>处理中...';
+            showStatus('正在上传文件并处理，请稍候...', 'loading');
+            result.classList.remove('show');
+            
+            try {
+                // 创建 FormData 上传文件
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                
+                // 先上传文件获取文件 URL
+                const uploadResponse = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!uploadResponse.ok) {
+                    throw new Error('文件上传失败');
+                }
+                
+                const uploadResult = await uploadResponse.json();
+                const fileUrl = uploadResult.url;
+                
+                showStatus('文件已上传，正在处理...', 'loading');
+                
+                // 调用工作流 API
+                const runResponse = await fetch('/run', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        file: {
+                            url: fileUrl,
+                            file_type: 'document'
+                        }
+                    })
+                });
+                
+                if (!runResponse.ok) {
+                    const errorData = await runResponse.json();
+                    throw new Error(errorData.detail || '处理失败');
+                }
+                
+                const runResult = await runResponse.json();
+                
+                // 显示结果
+                document.getElementById('totalTerms').textContent = runResult.statistics?.total_terms || 0;
+                document.getElementById('modifiedCount').textContent = runResult.statistics?.modified_count || 0;
+                document.getElementById('unchangedCount').textContent = runResult.statistics?.unchanged_count || 0;
+                
+                if (runResult.download_url) {
+                    downloadLink.href = runResult.download_url;
+                    downloadLink.style.display = 'block';
+                } else {
+                    downloadLink.style.display = 'none';
+                }
+                
+                result.classList.add('show');
+                showStatus('处理完成！', 'success');
+                
+            } catch (error) {
+                showStatus('处理失败: ' + error.message, 'error');
+                console.error('Error:', error);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '开始处理';
+            }
+        });
+    </script>
+</body>
+</html>
